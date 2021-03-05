@@ -4,6 +4,14 @@
 
 int main(int argc, char* argv[]) {
 
+  checked{
+
+    int arr checked[5]  = { 0, 1, 2, 3, 4 };
+
+    ptr<ptr<int>> q;
+
+  }
+
 
   int arr checked[5]  = { 0, 1, 2, 3, 4 };
 
