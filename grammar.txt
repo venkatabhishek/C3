@@ -1,0 +1,33 @@
+main:
+| INCLUDE LANGLE inside RANGLE main 
+| block main 
+| keyword main 
+| LBRACE main RBRACE main 
+| LPAREN main RPAREN main 
+| COLON main 
+| SEMICOLON main 
+| ANY main 
+| COLON 
+| SEMICOLON 
+| ANY 
+| EOF 
+
+block:
+| CHECKED LBRACE main RBRACE
+    
+keyword:
+| pointer
+| CHECKED
+| WHERE inside COLON BOUNDS LPAREN main RPAREN 
+| COLON BOUNDS LPAREN main RPAREN 
+| DYNAMIC_CHECK LPAREN main RPAREN SEMICOLON
+    
+pointer:
+| PTR LANGLE pointer RANGLE 
+| PTR LANGLE inside RANGLE 
+
+inside:
+| CHECKED inside 
+| ANY inside 
+| ANY 
+
