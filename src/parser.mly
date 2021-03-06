@@ -1,61 +1,73 @@
 
-%token CHECKED
 %token PTR
-%token INCLUDE
-%token DYNAMIC_CHECK
 %token BOUNDS
-%token WHERE
+%token ITYPE
 %token <string> ANY
+%token <string> ID
 %token EOF
-%token LBRACE
-%token RBRACE
 %token LANGLE
 %token RANGLE
 %token LPAREN
 %token RPAREN
-%token SEMICOLON
+%token FORANY
 %token COLON
+%token CHECKED
+%token DYNCHECK
 
 %start <(int*int*string) list> main
 
 %%
 
 main:
-| INCLUDE LANGLE inside RANGLE m = main { m }
-| b = block m = main { b @ m }
-| p = keyword m = main { p::m }
-| LBRACE m1 = main RBRACE m2 = main { m1 @ m2 }
-| LPAREN m1 = main RPAREN m2 = main { m1 @ m2}
+| p = pointer m = main { ($startpos.pos_cnum , $endpos(p).pos_cnum, p)::m }
+| p = annot m = main { p::m }
+| LPAREN m = main { m }
+| RPAREN m = main { m }
+| LANGLE m = main { m }
+| RANGLE m = main { m }
 | COLON m = main { m }
-| SEMICOLON m = main { m }
+| ID m = main { m }
 | ANY m = main { m }
-| COLON { [] }
-| SEMICOLON { [] }
-| ANY { [] }
 | EOF { [] }
 
-block:
-| CHECKED LBRACE m = main RBRACE
-    { [($startpos.pos_cnum, $endpos($2).pos_cnum, "")] @ m @ [($startpos($4).pos_cnum, $endpos($4).pos_cnum, "")] }
+annot:
+/* add INCLUDE here; remove _checked, drop stdchecked.h (and note it in lexer) */
+| CHECKED { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
+| DYNCHECK { ($startpos.pos_cnum, $endpos.pos_cnum, "assert") (* idea: replace with a macro with will neuter the check; pick something other than assert *) }
+| FORANY LPAREN ID RPAREN { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
+| COLON bounds
+    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
+| COLON itype bounds*
+    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
 
-keyword:
-| p = pointer
-    { ($startpos.pos_cnum , $endpos(p).pos_cnum, p) }
-| CHECKED
-    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
-| WHERE inside COLON BOUNDS LPAREN main RPAREN 
-    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
-| COLON BOUNDS LPAREN main RPAREN 
-    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
-| DYNAMIC_CHECK LPAREN main RPAREN SEMICOLON
-    { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
+bounds:
+| BOUNDS LPAREN insidebounds* RPAREN { None }
+
+insidebounds:
+| LPAREN insidebounds RPAREN { None }
+| pointer { None }
+| LANGLE { None }
+| RANGLE { None }
+| COLON { None }
+| ID { None }
+| ANY { None }
+
+itype:
+| ITYPE LPAREN insideitype* RPAREN { None }
+
+insideitype:
+| pointer { None }
+| ID { None }
+| ANY { None }
 
 pointer:
-| PTR LANGLE p = pointer RANGLE { String.concat "" [p; "*"] }
-| PTR LANGLE s = inside RANGLE { String.concat "" [s; "*"]}
+| PTR LANGLE p = pointer RANGLE { String.concat "" [p; " *"] }
+| PTR LANGLE s = insideptr RANGLE { String.concat "" [s; " *"]}
 
-inside:
-| CHECKED s = inside { String.concat "" [s]}
-| c = ANY s = inside { String.concat "" [c; s]}
+insideptr:
+| c = ANY s = insideptr { String.concat "" [c; s]}
+/* This is not properly capturing whitespace: it assumes there's a space between tokens, but that's not necessarily so. Need to fix lexer.  */
+| c = ID s = insideptr { String.concat " " [c; s]}
 | c = ANY { c }
+| c = ID { c }
 
