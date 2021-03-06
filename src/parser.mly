@@ -11,6 +11,8 @@
 %token RPAREN
 %token FORANY
 %token COLON
+%token CHECKED
+%token DYNCHECK
 
 %start <(int*int*string) list> main
 
@@ -29,6 +31,9 @@ main:
 | EOF { [] }
 
 annot:
+/* add INCLUDE here; remove _checked, drop stdchecked.h (and note it in lexer) */
+| CHECKED { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
+| DYNCHECK { ($startpos.pos_cnum, $endpos.pos_cnum, "assert") (* idea: replace with a macro with will neuter the check; pick something other than assert *) }
 | FORANY LPAREN ID RPAREN { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
 | COLON bounds
     { ($startpos.pos_cnum, $endpos.pos_cnum, "") }
@@ -61,6 +66,7 @@ pointer:
 
 insideptr:
 | c = ANY s = insideptr { String.concat "" [c; s]}
+/* This is not properly capturing whitespace: it assumes there's a space between tokens, but that's not necessarily so. Need to fix lexer.  */
 | c = ID s = insideptr { String.concat " " [c; s]}
 | c = ANY { c }
 | c = ID { c }
